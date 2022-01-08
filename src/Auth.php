@@ -13,6 +13,7 @@ use Delight\Db\PdoDatabase;
 use Delight\Db\PdoDsn;
 use Delight\Db\Throwable\Error;
 use Delight\Db\Throwable\IntegrityConstraintViolationException;
+use support\Request;
 
 /** Component that provides all features and utilities for secure authentication of individual users */
 final class Auth extends UserManager {
@@ -50,17 +51,20 @@ final class Auth extends UserManager {
 	 */
 	private $request = false;
 
-	/**
-	 * @param PdoDatabase|PdoDsn|\PDO $databaseConnection the database connection to operate on
-	 * @param string|null $ipAddress (optional) the IP address that should be used instead of the default setting (if any), e.g. when behind a proxy
-	 * @param string|null $dbTablePrefix (optional) the prefix for the names of all database tables used by this component
-	 * @param bool|null $throttling (optional) whether throttling should be enabled (e.g. in production) or disabled (e.g. during development)
-	 * @param int|null $sessionResyncInterval (optional) the interval in seconds after which to resynchronize the session data with its authoritative source in the database
-	 * @param string|null $dbSchema (optional) the schema name for all database tables used by this component
-	 */
+    /**
+     * @param PdoDatabase|PdoDsn|\PDO $databaseConnection the database connection to operate on
+     * @param string|null $ipAddress (optional) the IP address that should be used instead of the default setting (if any), e.g. when behind a proxy
+     * @param string|null $dbTablePrefix (optional) the prefix for the names of all database tables used by this component
+     * @param bool|null $throttling (optional) whether throttling should be enabled (e.g. in production) or disabled (e.g. during deve
+     * @param int|null $sessionResyncInterval (optional) the interval in seconds after which to resynchronize the session data with its authoritative source in the database
+     * @param string|null $dbSchema (optional) the schema name for all database tables used by this component
+     * @param \Response $response
+     * @param \Request $request
+     * @throws DatabaseError
+     */
 
-	public function __construct($databaseConnection, $ipAddress = null, $dbTablePrefix = null, $throttling = null, $sessionResyncInterval = null, $dbSchema = null, &$session = null, &$response = null, &$request = null) {
-		$this->session = &$session;
+    public function __construct($databaseConnection, $ipAddress = null, $dbTablePrefix = null, $throttling = null, $sessionResyncInterval = null, $dbSchema = null, &$response = null, &$request = null) {
+        $this->session = &$request->session();
 		$this->response = &$response;
 		$this->request = &$request;
 
