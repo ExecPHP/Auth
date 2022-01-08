@@ -64,7 +64,7 @@ final class Auth extends UserManager {
      */
 
     public function __construct($databaseConnection, $ipAddress = null, $dbTablePrefix = null, $throttling = null, $sessionResyncInterval = null, $dbSchema = null, &$response = null, &$request = null) {
-        $this->session = &$request->session();
+        $this->session = $request->session();
 		$this->response = &$response;
 		$this->request = &$request;
 
