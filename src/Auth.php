@@ -13,7 +13,6 @@ use Delight\Db\PdoDatabase;
 use Delight\Db\PdoDsn;
 use Delight\Db\Throwable\Error;
 use Delight\Db\Throwable\IntegrityConstraintViolationException;
-use support\Request;
 
 /** Component that provides all features and utilities for secure authentication of individual users */
 final class Auth extends UserManager {
@@ -69,21 +68,21 @@ final class Auth extends UserManager {
 		$this->request = &$request;
 
 		$_COOKIE = $this->request->cookie();
-		$_SESSION = $this->session->all();
-
 
 		$this->ipAddress = !empty($ipAddress) ? $ipAddress : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null);
 		$this->throttling = isset($throttling) ? (bool) $throttling : true;
 		$this->sessionResyncInterval = isset($sessionResyncInterval) ? ((int) $sessionResyncInterval) : (60 * 5);
 		$this->rememberCookieName = self::createRememberCookieName();
 
-		parent::__construct($databaseConnection, $dbTablePrefix, $dbSchema);
+		parent::__construct($databaseConnection, $dbTablePrefix, $dbSchema, $this->session);
 
 		$this->enhanceHttpSecurity();
 
 		$this->processRememberDirective();
 		$this->resyncSessionIfNecessary();
 	}
+
+
 
 	/** Improves the application's security over HTTP(S) by setting specific headers */
 	private function enhanceHttpSecurity() {
@@ -165,6 +164,7 @@ final class Auth extends UserManager {
 			// the following session field may not have been initialized for sessions that had already existed before the introduction of this feature
 			if (!$this->session->get(self::SESSION_FIELD_LAST_RESYNC)) {
 				$this->session->set(self::SESSION_FIELD_LAST_RESYNC, 0);
+                $this->session->save();
 			}
 
 			// if it's time for resynchronization
@@ -185,6 +185,7 @@ final class Auth extends UserManager {
 					// the following session field may not have been initialized for sessions that had already existed before the introduction of this feature
 					if (!$this->session->get(self::SESSION_FIELD_FORCE_LOGOUT)) {
 						$this->session->set(self::SESSION_FIELD_FORCE_LOGOUT, 0);
+                        $this->session->save();
 					}
 
 					// if the counter that keeps track of forced logouts has been incremented
@@ -204,6 +205,7 @@ final class Auth extends UserManager {
 							// remember that we've just performed the required resynchronization
 							self::SESSION_FIELD_LAST_RESYNC => \time(),
 						]);
+                        $this->session->save();
 					}
 				}
 				// if no data has been found for the user
@@ -212,6 +214,8 @@ final class Auth extends UserManager {
 					$this->logOut();
 				}
 			}
+
+
 		}
 	}
 
@@ -429,6 +433,7 @@ final class Auth extends UserManager {
 				self::SESSION_FIELD_LAST_RESYNC,
 				self::SESSION_FIELD_FORCE_LOGOUT,
 			]);
+            $this->session->save();
 		}
 	}
 
@@ -459,8 +464,8 @@ final class Auth extends UserManager {
 
 
 		// re-generate the session ID to prevent session fixation attacks (requests a cookie to be written on the client)
-		\request()->session()->flush();
-
+        $this->session->flush();
+        $this->session->save();
 		// if there had been an existing remember directive previously
 		if (isset($previousRememberDirectiveExpiry)) {
 			// restore the directive with the old expiry date but new credentials
@@ -495,6 +500,7 @@ final class Auth extends UserManager {
 	 */
 	public function destroySession() {
 		$this->session->flush();
+        $this->session->save();
 	}
 
 	/**
@@ -600,6 +606,7 @@ final class Auth extends UserManager {
 	 */
 	private function deleteSessionCookie() {
 		$this->session->flush();
+        $this->session->save();
 	}
 
 	/**
@@ -669,6 +676,7 @@ final class Auth extends UserManager {
 						if ($this->getUserId() === $confirmationData['user_id']) {
 							// immediately update the email address in the current session as well
 							$this->session->set(self::SESSION_FIELD_EMAIL, $confirmationData['new_email']);
+                            $this->session->save();
 						}
 					}
 

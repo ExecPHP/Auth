@@ -47,6 +47,10 @@ abstract class UserManager {
 	/** @var string the prefix for the names of all database tables used by this component */
 	protected $dbTablePrefix;
 
+    /**
+     * @var \Workerman\Protocols\Http\Session
+     */
+    public $session = false;
 	/**
 	 * Creates a random string with the given maximum length
 	 *
@@ -71,7 +75,7 @@ abstract class UserManager {
 	 * @param string|null $dbTablePrefix (optional) the prefix for the names of all database tables used by this component
 	 * @param string|null $dbSchema (optional) the schema name for all database tables used by this component
 	 */
-	protected function __construct($databaseConnection, $dbTablePrefix = null, $dbSchema = null) {
+	protected function __construct($databaseConnection, $dbTablePrefix = null, $dbSchema = null, &$session = null) {
 		if ($databaseConnection instanceof PdoDatabase) {
 			$this->db = $databaseConnection;
 		}
@@ -86,6 +90,8 @@ abstract class UserManager {
 
 			throw new \InvalidArgumentException('The database connection must be an instance of either `PdoDatabase`, `PdoDsn` or `PDO`');
 		}
+
+        $this->session = $session;
 
 		$this->dbSchema = $dbSchema !== null ? (string) $dbSchema : null;
 		$this->dbTablePrefix = (string) $dbTablePrefix;
@@ -228,7 +234,8 @@ abstract class UserManager {
 	 */
 	protected function onLoginSuccessful($userId, $email, $username, $status, $roles, $forceLogout, $remembered) {
 		// re-generate the session ID to prevent session fixation attacks (requests a cookie to be written on the client)
-		\request()->session()->flush();
+		$this->session->flush();
+
 
 		// save the user data in the session variables maintained by this library
 		$arr[self::SESSION_FIELD_LOGGED_IN] = true;
@@ -240,7 +247,8 @@ abstract class UserManager {
 		$arr[self::SESSION_FIELD_FORCE_LOGOUT] = (int) $forceLogout;
 		$arr[self::SESSION_FIELD_REMEMBERED] = $remembered;
 		$arr[self::SESSION_FIELD_LAST_RESYNC] = \time();
-		\request()->session()->put($arr);
+		$this->session->put($arr);
+        $this->session->save();
 	}
 
 	/**
