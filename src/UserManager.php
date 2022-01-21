@@ -91,7 +91,7 @@ abstract class UserManager {
 			throw new \InvalidArgumentException('The database connection must be an instance of either `PdoDatabase`, `PdoDsn` or `PDO`');
 		}
 
-        $this->session = $session;
+        $this->session = &$session;
 
 		$this->dbSchema = $dbSchema !== null ? (string) $dbSchema : null;
 		$this->dbTablePrefix = (string) $dbTablePrefix;
